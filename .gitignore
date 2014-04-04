@@ -1,0 +1,9 @@
+# Temp files
+*~
+.*.swp
+.*.swo
+.*.swn
+
+# Cabal
+/dist
+/.cabal-sandbox
