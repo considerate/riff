@@ -8,6 +8,8 @@ import Data.Word
 import Data.Binary.Get
 import qualified Data.ByteString.Lazy as BL
 import Control.Monad (when)
+import Control.Monad.Trans.Either
+import Control.Monad.Trans.Class
 
 type RiffData = Word8
 type RiffChunkSize = Word32
@@ -15,6 +17,7 @@ type RiffId = String
 
 -- Important: The first RiffChunk must be a RiffChunkParent with id RIFF.
 type RiffFile = RiffChunk
+type ParseError = (ByteOffset, String)
 
 data RiffChunk 
    = RiffChunkChild
@@ -30,25 +33,29 @@ data RiffChunk
       }
    deriving (Eq, Show)
 
-withRiffFile :: String -> (RiffFile -> IO ()) -> IO ()
+withRiffFile :: String -> (Either ParseError RiffFile -> IO ()) -> IO ()
 withRiffFile filePath action = withBinaryFile filePath ReadMode $ \h -> do
    riffData <- fmap parseRiffData (BL.hGetContents h)
    action riffData
 
-parseRiffData :: BL.ByteString -> RiffFile
-parseRiffData = runGet getRiffChunk
+parseRiffData :: BL.ByteString -> Either ParseError RiffFile
+parseRiffData input =
+   case runGetOrFail (runEitherT getRiffChunk) input of
+      Left (_, offset, error) -> Left (offset, error)
+      Right (_, _, result) -> result
 
-getRiffChunk :: Get RiffChunk
+getRiffChunk :: EitherT ParseError Get RiffChunk
 getRiffChunk = do
-   id <- getIdentifier
+   id <- lift getIdentifier
    -- TODO will it always be little endian?
-   size <- getWord32le
+   size <- lift getWord32le
    if id `elem` parentChunkNames
       then do
-         formType <- getIdentifier
+         guardListSize id size
+         formType <- lift getIdentifier
          -- Minus 4 because of the formType before that is part of the size
          children <- parseChunkList (size - 4)
-         skipToWordBoundary size
+         lift $ skipToWordBoundary size
          return RiffChunkParent
             { riffChunkId = id
             , riffChunkSize = size
@@ -57,13 +64,22 @@ getRiffChunk = do
             }
       else do
          -- TODO do we need to consider byte boundaries here?
-         riffData <- getNWords (fromIntegral size)
-         skipToWordBoundary size
+         riffData <- lift $ getNWords (fromIntegral size)
+         lift $ skipToWordBoundary size
          return RiffChunkChild
             { riffChunkId = id
             , riffChunkSize = size
             , riffData = riffData
             }
+   where
+      guardListSize id size = when (size < 4) $ do
+         read <- lift bytesRead
+         left (read, message id size)
+         where
+            message id size = 
+               "List Chunk Id '" ++ id 
+               ++ "' had chunk size " ++ show size 
+               ++ " which is less than 4 and invalid."
 
 skipToWordBoundary :: RiffChunkSize -> Get ()
 skipToWordBoundary size = do
@@ -77,7 +93,7 @@ padToWord x = if x `mod` 2 == 0
 
 paddedChunkSize = padToWord . riffChunkSize
 
-parseChunkList :: RiffChunkSize -> Get [RiffChunk]
+parseChunkList :: RiffChunkSize -> EitherT ParseError Get [RiffChunk]
 parseChunkList 0         = return []
 parseChunkList totalSize = do
    nextChunk <- getRiffChunk
