@@ -16,7 +16,9 @@ processFile :: String -> IO ()
 processFile filePath = do
    putStr "File: "
    print filePath
-   withRiffFile filePath (printRiffFile startContext)
+   withRiffFile filePath $ \potential -> case potential of
+      Left (offset, error) -> putStrLn $ error ++ " (Offset: " ++ show offset ++ ")"
+      Right riffFile -> printRiffFile startContext riffFile
 
 data PrintContext = PrintContext
    { indentation :: Int
