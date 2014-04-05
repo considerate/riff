@@ -13,10 +13,17 @@ name:                riff
 version:             0.1.0.0
 
 -- A short (one-line) description of the package.
-synopsis:            Parse RIFF files.
+synopsis:            RIFF parser for Haskell
 
 -- A longer description of the package.
--- description:         
+description:         This library provides a RIFF parser for Haskell for easy manipulation
+                     of common file formats like WAVE and RIFF container AVI files.
+
+stability:           experimental
+
+homepage:            https://bitbucket.org/robertmassaioli/riff/overview
+
+bug-reports:         https://bitbucket.org/robertmassaioli/riff/issues
 
 -- The license under which the package is released.
 license:             MIT
@@ -32,7 +39,7 @@ author:              Robert Massaioli
 maintainer:          robertmassaioli@gmail.com
 
 -- A copyright notice.
--- copyright:           
+copyright:           (c) 2014 Robert Massaioli         
 
 category:            Data
 
@@ -40,7 +47,7 @@ build-type:          Simple
 
 -- Extra files to be distributed with the package, such as examples or a 
 -- README.
--- extra-source-files:  
+extra-source-files:  LICENSE, README.markdown
 
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10

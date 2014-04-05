@@ -48,7 +48,7 @@ getRiffChunk = do
          formType <- getIdentifier
          children <- parseChunkList (size - 4)
          when (size `mod` 2 == 1) $ skip 1
-         return $ RiffChunkParent
+         return RiffChunkParent
             { riffChunkId = id
             , riffChunkSize = size
             , riffFormTypeInfo = formType
@@ -58,7 +58,7 @@ getRiffChunk = do
          -- TODO do we need to consider byte boundaries here?
          riffData <- getNWords (fromIntegral size)
          when (size `mod` 2 == 1) $ skip 1
-         return $ RiffChunkChild
+         return RiffChunkChild
             { riffChunkId = id
             , riffChunkSize = size
             , riffData = riffData
