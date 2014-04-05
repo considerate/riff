@@ -46,8 +46,9 @@ getRiffChunk = do
    if id `elem` parentChunkNames
       then do
          formType <- getIdentifier
+         -- Minus 4 because of the formType before that is part of the size
          children <- parseChunkList (size - 4)
-         when (size `mod` 2 == 1) $ skip 1
+         skipToWordBoundary size
          return RiffChunkParent
             { riffChunkId = id
             , riffChunkSize = size
@@ -57,12 +58,17 @@ getRiffChunk = do
       else do
          -- TODO do we need to consider byte boundaries here?
          riffData <- getNWords (fromIntegral size)
-         when (size `mod` 2 == 1) $ skip 1
+         skipToWordBoundary size
          return RiffChunkChild
             { riffChunkId = id
             , riffChunkSize = size
             , riffData = riffData
             }
+
+skipToWordBoundary :: RiffChunkSize -> Get ()
+skipToWordBoundary size = do
+   empty <- isEmpty
+   when (not empty && size `mod` 2 == 1) $ skip 1
 
 padToWord :: Word32 -> Word32
 padToWord x = if x `mod` 2 == 0
@@ -71,14 +77,17 @@ padToWord x = if x `mod` 2 == 0
 
 paddedChunkSize = padToWord . riffChunkSize
 
--- TODO worry about pad bytes
 parseChunkList :: RiffChunkSize -> Get [RiffChunk]
-parseChunkList totalSize
-   | totalSize <= 0 = return []
-   | otherwise = do
-      nextChunk <- getRiffChunk
-      following <- parseChunkList (totalSize - (8 + paddedChunkSize nextChunk))
-      return $ nextChunk : following
+parseChunkList 0         = return []
+parseChunkList totalSize = do
+   nextChunk <- getRiffChunk
+   -- No matter what type of chunk it is tehre will be 8 bytes taken up by the id and size
+   let chunkSize = 8 + paddedChunkSize nextChunk
+   if totalSize <= chunkSize
+      then return [nextChunk]
+      else do
+         following <- parseChunkList (totalSize - chunkSize)
+         return $ nextChunk : following
 
 parentChunkNames :: [String]
 parentChunkNames = ["RIFF", "LIST"]
