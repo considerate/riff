@@ -33,7 +33,7 @@ printRiffFile context (RiffChunkChild id size value) = do
    putStr $ " [" ++ show size ++ "]"
    when (printValue context) $ do
       putStr ": "
-      inQuotes (putStr $ fmap (chr . fromIntegral) value)
+      inQuotes (putStr . fmap (chr . fromIntegral) $ takeWhile (/= 0) value)
    putNewline
 printRiffFile context (RiffChunkParent id size typeName children) = do
    printWithIndent context id
