@@ -19,6 +19,7 @@ module Data.Riff.Parse
    ) where
 
 import Data.Riff.RiffData
+import Data.Riff.InternalUtil
 
 import Control.Monad (when, replicateM)
 import Control.Monad.Trans.Either (EitherT(..), left, right)
@@ -126,11 +127,6 @@ skipToWordBoundary :: RiffChunkSize -> Get ()
 skipToWordBoundary size = do
    empty <- isEmpty
    when (not empty && size `mod` 2 == 1) $ skip 1
-
-padToWord :: RiffChunkSize -> RiffChunkSize
-padToWord x = if x `mod` 2 == 0
-   then x
-   else x + 1
 
 getNWords :: Int -> Get [Word8]
 getNWords n = replicateM n getWord8

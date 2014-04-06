@@ -65,7 +65,8 @@ library
                        , Data.Riff.Operations
   
   -- Modules included in this library but not exported.
-  other-modules:       Data.Riff.RiffData
+  other-modules:       Data.Riff.InternalUtil
+                       , Data.Riff.RiffData
   
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:    
