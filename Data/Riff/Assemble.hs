@@ -47,7 +47,7 @@ assembleRiffFile
    :: FilePath -- ^ The location on the filesystem to save the RiffFile.
    -> RiffFile -- ^ The in-memory representation of a RiffFile to be saved.
    -> IO ()    -- ^ Writing to disk is an IO operatin and we return no results.
-assembleRiffFile filePath riffFile = withBinaryFile filePath WriteMode $ \h -> do
+assembleRiffFile filePath riffFile = withBinaryFile filePath WriteMode $ \h -> 
    BL.hPut h (assembleRiffFileStream riffFile)
 
 -- | Assembles a RiffFile into it's representation in a Lazy ByteString. 
@@ -78,13 +78,13 @@ writeRiffChunk :: AssemblyContext -> RiffChunk -> Put
 writeRiffChunk context chunk@(RiffChunkChild _ _) = do
    putString . safeId . riffChunkId $ chunk
    let chunkSize = calculateChunkLength chunk
-   putSize context $ chunkSize
+   putSize context chunkSize
    sequence_ $ fmap putWord8 (riffData chunk)
    when (chunkSize `mod` 2 == 1) putBlankByte
 writeRiffChunk context chunk@(RiffChunkParent _ _) = do
    putString "LIST" -- Do not need to pass through safeId, chosen to be correct
    let chunkSize = calculateChunkLength chunk
-   putSize context $ chunkSize
+   putSize context chunkSize
    putString . safeId . riffFormTypeInfo $ chunk
    sequence_ $ fmap (writeRiffChunk context) (riffChunkChildren chunk)
    when (chunkSize `mod` 2 == 1) putBlankByte
@@ -99,6 +99,6 @@ putString :: String -> Put
 putString = sequence_ . fmap (putWord8 . fromIntegral . ord)
 
 safeId :: RiffId -> RiffId
-safeId input = if (length input) < 4
-   then take 4 $ input ++ repeat ' '
-   else take 4 input
+safeId input = take 4 $ if length input < 4 
+   then input ++ repeat ' '
+   else input
