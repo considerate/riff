@@ -13,9 +13,11 @@ type RiffData = Word8
 -- chunk, it does include the four bytes of the Chunk FormType Id.
 --
 -- According to the specification a chunk size must be represented by four bytes of data.
--- This means that the maximum number of bytes that can be present in a RIFF file is 2 ^
--- 32 + 8 = 4294967304 bytes or ~4GB. If your raw data is larger than that then this file
--- format cannot support it.
+-- This means that the maximum number of bytes that can be present in a RIFF file is:
+--
+-- > 2 ^ 32 + 8 = 4294967304 bytes or ~4GB 
+-- 
+-- If your raw data is larger than that then this file format cannot support it.
 type RiffChunkSize = Word32
 
 -- | A RiffId is just a four character string (FourCC). It is usually (but by no means

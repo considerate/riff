@@ -1,28 +1,26 @@
 {-|
-Description : The module that allows parsing of a RIFF / RIFX file.
+Description : Convenience module that brings together both the parsing and assebling of Riff files.
 Copyright   : (c) Robert Massaioli, 2014
 License     : MIT
 Maintainer  : robertmassaioli@gmail.com
 Stability   : experimental
 
-This module allows the parsing of RIFF files in pure Haskell. You can parse a RIFF file using the 
-methods provided in this module. For example, if you wanted to parse a RIFF file and print it out
-then you could:
-
-> main = withRiffFile "path/to/file.riff" print
-
-And that will print the RIFF file, in gory details, to the screen.
+This module was made as a convinience, it's purpose is to aid the manipulation of RIFF files such 
+that you can both parse them and asseble them. If you wish to just parse or assemble Riff files 
+then you may be better off just importing Data.Riff.Parse or Data.Riff.Assemble respectively.
 -}
-module Data.Riff
-   ( RiffFile(..)
-   , RiffChunkSize
-   , RiffFileType(..)
-   , RiffChunk(..)
-   , RiffId
-   , RiffData
-   , ParseError
-   , withRiffFile
-   , parseRiffData
+module Data.Riff ( 
+   -- * RIFF File Data Representaion
+   RiffFile(..),
+   RiffChunkSize, 
+   RiffFileType(..), 
+   RiffChunk(..), 
+   RiffId, 
+   RiffData, 
+   ParseError,
+   -- * Reading (parsing) RIFF Files
+   withRiffFile,
+   parseRiffData
    ) where
 
 import Data.Riff.RiffData
