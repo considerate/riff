@@ -1,8 +1,18 @@
-module Data.Riff where
+module Data.Riff 
+   ( RiffChunk(..)
+   , RiffFile(..)
+   , RiffFileType(..)
+   , RiffData
+   , RiffChunkSize
+   , RiffId
+   , ParseError
+   , withRiffFile
+   , parseRiffData
+   ) where
 
 import Data.Riff.ParseExtras
 
-import System.IO (withBinaryFile, hSetBinaryMode)
+import System.IO (withBinaryFile)
 import GHC.IO.IOMode
 import Data.Word
 import Data.Binary.Get
@@ -15,10 +25,11 @@ type RiffData = Word8
 type RiffChunkSize = Word32
 type RiffId = String
 
--- Important: The first RiffChunk must be a RiffChunkParent with id RIFF.
-type RiffFile = RiffChunk
 type ParseError = (ByteOffset, String)
 
+-- | A RiffFile is just an alias for a RiffChunk. A RiffFile is merely a nested collection
+-- of RiffChunks where the first element must be a list of chunks with the ID RIFF or
+-- RIFX. 
 data RiffChunk 
    = RiffChunkChild
       { riffChunkId :: RiffId
@@ -26,14 +37,31 @@ data RiffChunk
       , riffData :: [RiffData]
       }
    | RiffChunkParent
-      { riffChunkId :: RiffId
-      , riffChunkSize :: RiffChunkSize
+      { riffChunkSize :: RiffChunkSize
       , riffFormTypeInfo :: RiffId
-      , riffChildren :: [RiffChunk]
+      , riffChunkChildren :: [RiffChunk]
       }
    deriving (Eq, Show)
 
-withRiffFile :: String -> (Either ParseError RiffFile -> IO ()) -> IO ()
+data RiffFileType = RIFF | RIFX
+   deriving(Eq, Show)
+
+data RiffFile = RiffFile
+   { riffFileType :: RiffFileType
+   , riffFileSize :: RiffChunkSize
+   , riffFileFormatType :: RiffId
+   , riffFileChildren :: [RiffChunk]
+   }
+   deriving (Eq, Show)
+
+-- | Given a FilePath you can provide a function that will be given either a ParseError or
+-- an actual RiffFile to process. It is important to note that you should do all of the
+-- processing of the RiffFile in the provided action because the file will be closed at
+-- the end of this function.
+withRiffFile :: FilePath                              -- ^ The file that will be read.
+             -> (Either ParseError RiffFile -> IO ()) -- ^ An action to perform on the potentialy 
+                                                      -- parsed file
+             -> IO ()                                 -- ^ The resultant IO action.
 withRiffFile filePath action = withBinaryFile filePath ReadMode $ \h -> do
    riffData <- fmap parseRiffData (BL.hGetContents h)
    action riffData
@@ -48,27 +76,27 @@ data ParseContext = ParseContext
    { getSize :: Get Word32
    }
 
-leContext = ParseContext getWord32le
-beContext = ParseContext getWord32be
-
-getRiffStart :: EitherT ParseError Get RiffChunk
+getRiffStart :: EitherT ParseError Get RiffFile
 getRiffStart = do
    id <- lift getIdentifier
-   context <- case id of
-      "RIFF" -> right leContext
-      "RIFX" -> right beContext
+   (context, fileType) <- case id of
+      "RIFF" -> right (leContext, RIFF)
+      "RIFX" -> right (beContext, RIFX)
       _ -> do
          read <- lift bytesRead 
          left (read, "RIFF file not allowed to start with chunk id: '" ++ id ++ "'. Must start with either RIFF or RIFX")
    size <- lift . getSize $ context
    riffType <- lift getIdentifier
    contents <- parseChunkList context (size - 4)
-   return RiffChunkParent
-      { riffChunkId = id
-      , riffChunkSize = size
-      , riffFormTypeInfo = riffType
-      , riffChildren = contents
+   return RiffFile
+      { riffFileType = fileType
+      , riffFileSize = size
+      , riffFileFormatType = riffType
+      , riffFileChildren = contents
       }
+   where
+      leContext = ParseContext getWord32le
+      beContext = ParseContext getWord32be
 
 getRiffChunk :: ParseContext -> EitherT ParseError Get RiffChunk
 getRiffChunk context = do
@@ -82,10 +110,9 @@ getRiffChunk context = do
          children <- parseChunkList context (size - 4)
          lift $ skipToWordBoundary size
          return RiffChunkParent
-            { riffChunkId = id
-            , riffChunkSize = size
+            { riffChunkSize = size
             , riffFormTypeInfo = formType
-            , riffChildren = children
+            , riffChunkChildren = children
             }
       else do
          -- TODO do we need to consider byte boundaries here?

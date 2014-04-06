@@ -19,7 +19,4 @@ getNChars = fmap (fmap byteToChar) . getNWords
 byteToChar :: Word8 -> Char
 byteToChar = chr . fromIntegral
 
-bytesToString :: [Word8] -> String
-bytesToString = map byteToChar
-
 getIdentifier = getNChars 4

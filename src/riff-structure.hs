@@ -30,17 +30,31 @@ startContext :: PrintContext
 startContext = PrintContext 0 False
 
 printRiffFile :: PrintContext -> RiffFile -> IO ()
-printRiffFile context (RiffChunkChild id size value) = do
+printRiffFile context (RiffFile riffType size formatType children) = do
+   printWithIndent context (typeName riffType)
+   putStrLn $ " (" ++ formatType ++ ") [" ++ show size ++ "]"
+   mapM_ (printRiffChunk nextContext) children
+   where
+      nextContext = PrintContext
+         { indentation = 1 + indentation context
+         , printValue = False
+         }
+
+      typeName RIFF = "RIFF"
+      typeName RIFX = "RIFX"
+
+printRiffChunk :: PrintContext -> RiffChunk -> IO ()
+printRiffChunk context (RiffChunkChild id size value) = do
    printWithIndent context id
    putStr $ " [" ++ show size ++ "]"
    when (printValue context) $ do
       putStr ": "
       inQuotes (putStr . fmap (chr . fromIntegral) $ takeWhile (/= 0) value)
    putNewline
-printRiffFile context (RiffChunkParent id size typeName children) = do
-   printWithIndent context id
+printRiffChunk context (RiffChunkParent size typeName children) = do
+   printWithIndent context "LIST"
    putStrLn $ " (" ++ typeName ++ ") [" ++ show size ++ "]"
-   mapM_ (printRiffFile nextContext) children
+   mapM_ (printRiffChunk nextContext) children
    where
       nextContext = PrintContext
          { indentation = 1 + indentation context
