@@ -40,21 +40,53 @@ withRiffFile filePath action = withBinaryFile filePath ReadMode $ \h -> do
 
 parseRiffData :: BL.ByteString -> Either ParseError RiffFile
 parseRiffData input =
-   case runGetOrFail (runEitherT getRiffChunk) input of
+   case runGetOrFail (runEitherT getRiffStart) input of
       Left (_, offset, error) -> Left (offset, error)
       Right (_, _, result) -> result
 
-getRiffChunk :: EitherT ParseError Get RiffChunk
-getRiffChunk = do
+data ParseContext = ParseContext
+   { getSize :: Get Word32
+   }
+
+leContext = ParseContext getWord32le
+beContext = ParseContext getWord32be
+
+getRiffStart :: EitherT ParseError Get RiffChunk
+getRiffStart = do
+   id <- lift getIdentifier
+   context <- case id of
+      "RIFF" -> right leContext
+      "RIFX" -> right beContext
+      _ -> do
+         read <- lift bytesRead 
+         left (read, "RIFF file not allowed to start with chunk id: '" ++ id ++ "'. Must start with either RIFF or RIFX")
+   size <- lift . getSize $ context
+   riffType <- lift getIdentifier
+   contents <- parseChunkList context (size - 4)
+   return RiffChunkParent
+      { riffChunkId = id
+      , riffChunkSize = size
+      , riffFormTypeInfo = riffType
+      , riffChildren = contents
+      }
+
+getContextFromId :: RiffId -> Maybe ParseContext
+getContextFromId "RIFF" = Just leContext
+getContextFromId "RIFX" = Just beContext
+getContextFromId _      = Nothing
+
+
+getRiffChunk :: ParseContext -> EitherT ParseError Get RiffChunk
+getRiffChunk context = do
    id <- lift getIdentifier
    -- TODO will it always be little endian?
-   size <- lift getWord32le
+   size <- lift . getSize $ context
    if id `elem` parentChunkNames
       then do
          guardListSize id size
          formType <- lift getIdentifier
          -- Minus 4 because of the formType before that is part of the size
-         children <- parseChunkList (size - 4)
+         children <- parseChunkList context (size - 4)
          lift $ skipToWordBoundary size
          return RiffChunkParent
             { riffChunkId = id
@@ -93,16 +125,16 @@ padToWord x = if x `mod` 2 == 0
 
 paddedChunkSize = padToWord . riffChunkSize
 
-parseChunkList :: RiffChunkSize -> EitherT ParseError Get [RiffChunk]
-parseChunkList 0         = return []
-parseChunkList totalSize = do
-   nextChunk <- getRiffChunk
+parseChunkList :: ParseContext -> RiffChunkSize -> EitherT ParseError Get [RiffChunk]
+parseChunkList _        0         = return []
+parseChunkList context  totalSize = do
+   nextChunk <- getRiffChunk context
    -- No matter what type of chunk it is tehre will be 8 bytes taken up by the id and size
    let chunkSize = 8 + paddedChunkSize nextChunk
    if totalSize <= chunkSize
       then return [nextChunk]
       else do
-         following <- parseChunkList (totalSize - chunkSize)
+         following <- parseChunkList context (totalSize - chunkSize)
          return $ nextChunk : following
 
 parentChunkNames :: [String]
