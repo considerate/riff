@@ -20,8 +20,11 @@ module Data.Riff (
    ParseError,
    -- * Reading (parsing) RIFF Files
    withRiffFile,
-   parseRiffData
+   parseRiffData,
+   assembleRiffFile,
+   assembleRiffFileStream
    ) where
 
 import Data.Riff.RiffData
 import Data.Riff.Parse
+import Data.Riff.Assemble
