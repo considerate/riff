@@ -23,7 +23,7 @@ stability:           experimental
 
 homepage:            https://bitbucket.org/robertmassaioli/riff/overview
 
-bug-reports:         https://bitbucket.org/robertmassaioli/riff/issues
+bug-reports:         http://bitbucket.org/robertmassaioli/riff/issues
 
 -- The license under which the package is released.
 license:             MIT
@@ -52,6 +52,10 @@ extra-source-files:  LICENSE, README.markdown
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
 
+-- The source repository that this comes from.
+source-repository head
+  type: git
+  location: git://bitbucket.org/robertmassaioli/riff.git
 
 library
   -- Modules exported by the library.
