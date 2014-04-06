@@ -70,7 +70,6 @@ getRiffStart = do
    contents <- parseChunkList context (size - 4)
    return RiffFile
       { riffFileType = fileType
-      , riffFileSize = size
       , riffFileFormatType = riffType
       , riffFileChildren = contents
       }
@@ -78,7 +77,19 @@ getRiffStart = do
       leContext = ParseContext getWord32le
       beContext = ParseContext getWord32be
 
-getRiffChunk :: ParseContext -> EitherT ParseError Get RiffChunk
+parseChunkList :: ParseContext -> RiffChunkSize -> EitherT ParseError Get [RiffChunk]
+parseChunkList _        0         = return []
+parseChunkList context  totalSize = do
+   (nextChunk, dataSize) <- getRiffChunk context
+   -- No matter what type of chunk it is tehre will be 8 bytes taken up by the id and size
+   let chunkSize = 8 + padToWord dataSize
+   if totalSize <= chunkSize
+      then return [nextChunk]
+      else do
+         following <- parseChunkList context (totalSize - chunkSize)
+         return $ nextChunk : following
+
+getRiffChunk :: ParseContext -> EitherT ParseError Get (RiffChunk, RiffChunkSize)
 getRiffChunk context = do
    id <- lift getIdentifier
    size <- lift . getSize $ context
@@ -89,20 +100,18 @@ getRiffChunk context = do
          -- Minus 4 because of the formType before that is part of the size
          children <- parseChunkList context (size - 4)
          lift $ skipToWordBoundary size
-         return RiffChunkParent
-            { riffChunkSize = size
-            , riffFormTypeInfo = formType
+         return (RiffChunkParent
+            { riffFormTypeInfo = formType
             , riffChunkChildren = children
-            }
+            }, size)
       else do
          -- TODO do we need to consider byte boundaries here?
          riffData <- lift $ getNWords (fromIntegral size)
          lift $ skipToWordBoundary size
-         return RiffChunkChild
+         return (RiffChunkChild
             { riffChunkId = id
-            , riffChunkSize = size
             , riffData = riffData
-            }
+            }, size)
    where
       guardListSize id size = when (size < 4) $ do
          read <- lift bytesRead
@@ -118,24 +127,10 @@ skipToWordBoundary size = do
    empty <- isEmpty
    when (not empty && size `mod` 2 == 1) $ skip 1
 
-parseChunkList :: ParseContext -> RiffChunkSize -> EitherT ParseError Get [RiffChunk]
-parseChunkList _        0         = return []
-parseChunkList context  totalSize = do
-   nextChunk <- getRiffChunk context
-   -- No matter what type of chunk it is tehre will be 8 bytes taken up by the id and size
-   let chunkSize = 8 + paddedChunkSize nextChunk
-   if totalSize <= chunkSize
-      then return [nextChunk]
-      else do
-         following <- parseChunkList context (totalSize - chunkSize)
-         return $ nextChunk : following
-
 padToWord :: RiffChunkSize -> RiffChunkSize
 padToWord x = if x `mod` 2 == 0
    then x
    else x + 1
-
-paddedChunkSize = padToWord . riffChunkSize
 
 getNWords :: Int -> Get [Word8]
 getNWords n = replicateM n getWord8

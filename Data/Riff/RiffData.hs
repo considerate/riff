@@ -33,9 +33,6 @@ type ParseError = (ByteOffset, String)
 -- with a RiffChunk.
 data RiffFile = RiffFile 
    { riffFileType :: RiffFileType      -- ^ The type of RIFF file.
-   , riffFileSize :: RiffChunkSize     -- ^ The size of all the contained data. This does not include
-                                       -- four bytes for the id and four bites for this
-                                       -- size itself.
    , riffFileFormatType :: RiffId      -- ^ An ID representing the type of data contained within.
    , riffFileChildren :: [RiffChunk]   -- ^ The chunks that make up the file.
    }
@@ -55,12 +52,10 @@ data RiffFileType
 data RiffChunk 
    = RiffChunkChild
       { riffChunkId :: RiffId
-      , riffChunkSize :: RiffChunkSize
       , riffData :: [RiffData]
       }
    | RiffChunkParent
-      { riffChunkSize :: RiffChunkSize
-      , riffFormTypeInfo :: RiffId
+      { riffFormTypeInfo :: RiffId
       , riffChunkChildren :: [RiffChunk]
       }
    deriving (Eq, Show)

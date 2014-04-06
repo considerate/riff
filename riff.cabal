@@ -61,6 +61,8 @@ library
   -- Modules exported by the library.
   exposed-modules:     Data.Riff
                        , Data.Riff.Parse
+                       , Data.Riff.Assemble
+                       , Data.Riff.Operations
   
   -- Modules included in this library but not exported.
   other-modules:       Data.Riff.RiffData
