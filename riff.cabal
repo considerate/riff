@@ -60,9 +60,10 @@ source-repository head
 library
   -- Modules exported by the library.
   exposed-modules:     Data.Riff
+                       , Data.Riff.Parse
   
   -- Modules included in this library but not exported.
-  other-modules:       Data.Riff.ParseExtras
+  other-modules:       Data.Riff.RiffData
   
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:    
