@@ -70,18 +70,11 @@ getRiffStart = do
       , riffChildren = contents
       }
 
-getContextFromId :: RiffId -> Maybe ParseContext
-getContextFromId "RIFF" = Just leContext
-getContextFromId "RIFX" = Just beContext
-getContextFromId _      = Nothing
-
-
 getRiffChunk :: ParseContext -> EitherT ParseError Get RiffChunk
 getRiffChunk context = do
    id <- lift getIdentifier
-   -- TODO will it always be little endian?
    size <- lift . getSize $ context
-   if id `elem` parentChunkNames
+   if id == "LIST"
       then do
          guardListSize id size
          formType <- lift getIdentifier
@@ -136,6 +129,3 @@ parseChunkList context  totalSize = do
       else do
          following <- parseChunkList context (totalSize - chunkSize)
          return $ nextChunk : following
-
-parentChunkNames :: [String]
-parentChunkNames = ["RIFF", "LIST"]
