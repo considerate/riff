@@ -27,6 +27,25 @@ type RiffId = String
 
 type ParseError = (ByteOffset, String)
 
+-- | This is our representation of a RIFF file. These files all have a
+-- format type and are composed by one or more nestable data Chunks which we represent
+-- with a RiffChunk.
+data RiffFile = RiffFile
+   { riffFileType :: RiffFileType
+   , riffFileSize :: RiffChunkSize
+   , riffFileFormatType :: RiffId
+   , riffFileChildren :: [RiffChunk]
+   }
+   deriving (Eq, Show)
+
+-- | There are only two different types of RIFF file: RIFF and RIFX and the difference is
+-- in the way that data is encoded inside them.
+data RiffFileType 
+   = RIFF -- ^ This is the most common type of RIFF file and is in little endian format.
+   | RIFX -- ^ This is a rare riff format that uses big endian encoding (otherwise known as
+          -- Motorolla byte order)
+   deriving(Eq, Show)
+
 -- | A RiffFile is just an alias for a RiffChunk. A RiffFile is merely a nested collection
 -- of RiffChunks where the first element must be a list of chunks with the ID RIFF or
 -- RIFX. 
@@ -41,17 +60,6 @@ data RiffChunk
       , riffFormTypeInfo :: RiffId
       , riffChunkChildren :: [RiffChunk]
       }
-   deriving (Eq, Show)
-
-data RiffFileType = RIFF | RIFX
-   deriving(Eq, Show)
-
-data RiffFile = RiffFile
-   { riffFileType :: RiffFileType
-   , riffFileSize :: RiffChunkSize
-   , riffFileFormatType :: RiffId
-   , riffFileChildren :: [RiffChunk]
-   }
    deriving (Eq, Show)
 
 -- | Given a FilePath you can provide a function that will be given either a ParseError or
