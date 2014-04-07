@@ -18,5 +18,4 @@ reassembleFile filePath = do
    putStr $ "> " ++ filePath ++ " ..."
    withRiffFile filePath $ \e -> case e of
       Left (_, error) -> putStrLn "[FAILED]" >> putStrLn error
-      Right riffFile -> assembleRiffFile (filePath ++ ".clone") riffFile
-   putStrLn "[Done]"
+      Right riffFile -> assembleRiffFile (filePath ++ ".clone") riffFile >> putStrLn "[Done]"
