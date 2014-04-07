@@ -80,14 +80,17 @@ writeRiffChunk context chunk@(RiffChunkChild _ _) = do
    let chunkSize = calculateChunkLength chunk
    putSize context chunkSize
    sequence_ $ fmap putWord8 (riffData chunk)
-   when (chunkSize `mod` 2 == 1) putBlankByte
+   maybeFillBlank chunkSize
 writeRiffChunk context chunk@(RiffChunkParent _ _) = do
    putString "LIST" -- Do not need to pass through safeId, chosen to be correct
    let chunkSize = calculateChunkLength chunk
    putSize context chunkSize
    putString . safeId . riffFormTypeInfo $ chunk
    sequence_ $ fmap (writeRiffChunk context) (riffChunkChildren chunk)
-   when (chunkSize `mod` 2 == 1) putBlankByte
+   maybeFillBlank chunkSize
+
+maybeFillBlank :: RiffChunkSize -> Put
+maybeFillBlank chunkSize = when (chunkSize `mod` 2 == 1) putBlankByte
 
 putBlankByte = putWord8 0
 
@@ -99,6 +102,4 @@ putString :: String -> Put
 putString = sequence_ . fmap (putWord8 . fromIntegral . ord)
 
 safeId :: RiffId -> RiffId
-safeId input = take 4 $ if length input < 4 
-   then input ++ repeat ' '
-   else input
+safeId input = take 4 $ input ++ repeat ' '
