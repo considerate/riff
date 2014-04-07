@@ -1,6 +1,8 @@
 module Main where
 
 import Data.Riff
+import Data.Riff.Operations
+
 import System.Environment (getArgs)
 import Data.List (intersperse)
 import Control.Monad (when)
@@ -30,9 +32,9 @@ startContext :: PrintContext
 startContext = PrintContext 0 False
 
 printRiffFile :: PrintContext -> RiffFile -> IO ()
-printRiffFile context (RiffFile riffType size formatType children) = do
+printRiffFile context file@(RiffFile riffType formatType children) = do
    printWithIndent context (typeName riffType)
-   putStrLn $ " (" ++ formatType ++ ") [" ++ show size ++ "]"
+   putStrLn $ " (" ++ formatType ++ ") [" ++ showFileLength file ++ "]"
    mapM_ (printRiffChunk nextContext) children
    where
       nextContext = PrintContext
@@ -44,22 +46,25 @@ printRiffFile context (RiffFile riffType size formatType children) = do
       typeName RIFX = "RIFX"
 
 printRiffChunk :: PrintContext -> RiffChunk -> IO ()
-printRiffChunk context (RiffChunkChild id size value) = do
+printRiffChunk context chunk@(RiffChunkChild id value) = do
    printWithIndent context id
-   putStr $ " [" ++ show size ++ "]"
+   putStr $ " [" ++ showLength chunk ++ "]"
    when (printValue context) $ do
       putStr ": "
       inQuotes (putStr . fmap (chr . fromIntegral) $ takeWhile (/= 0) value)
    putNewline
-printRiffChunk context (RiffChunkParent size typeName children) = do
+printRiffChunk context chunk@(RiffChunkParent typeName children) = do
    printWithIndent context "LIST"
-   putStrLn $ " (" ++ typeName ++ ") [" ++ show size ++ "]"
+   putStrLn $ " (" ++ typeName ++ ") [" ++ showLength chunk ++ "]"
    mapM_ (printRiffChunk nextContext) children
    where
       nextContext = PrintContext
          { indentation = 1 + indentation context
          , printValue = typeName == "INFO"
          }
+
+showFileLength = show . calculateFileLength
+showLength = show . calculateChunkLength
 
 inQuotes :: IO () -> IO ()
 inQuotes action = do
