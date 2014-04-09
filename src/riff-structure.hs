@@ -52,7 +52,7 @@ printRiffChunk context chunk@(RiffChunkChild id value) = do
    putStr $ " [" ++ showLength chunk ++ "]"
    when (printValue context) $ do
       putStr ": "
-      inQuotes (putStr . BLC.unpack $ BLC.takeWhile (/= chr 0) value)
+      inQuotes (putStr . BLC.unpack . BLC.takeWhile (/= chr 0) $ value)
    putNewline
 printRiffChunk context chunk@(RiffChunkParent typeName children) = do
    printWithIndent context "LIST"
