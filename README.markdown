@@ -24,6 +24,8 @@ To build the code:
     $ cabal sandbox init
     $ cabal install
 
+And that is all that there is to it.
+
 ## Bundled Executables
 
 I have written a few simple programs just so that I could test out the code that I have written:
