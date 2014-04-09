@@ -17,6 +17,10 @@ container layer include:
 And there are many more. You can even come up with your own data that can be contained
 inside RIFF.
 
+## Getting the Code
+
+You can just rely upon the library in your cabal files. The [code is on Hackage][3].
+
 ## Building the Code
 
 To build the code:
@@ -47,3 +51,4 @@ Here is a list of example data that you may be able to download:
 
  [1]: http://www.johnloomis.org/cpe102/asgn/asgn1/riff.zip
  [2]: http://en.wikipedia.org/wiki/Resource_Interchange_File_Format
+ [3]: http://hackage.haskell.org/package/riff
