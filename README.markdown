@@ -23,7 +23,17 @@ To build the code:
 
     $ cabal sandbox init
     $ cabal install
-    $ cabal run <riff-file>
+
+## Bundled Executables
+
+I have written a few simple programs just so that I could test out the code that I have written:
+
+    $ cabal run riff-structure # prints out the internal structure of a RIFF file
+    $ cabal run riff-convert # lets you convert files to and from RIFF and RIFX formats
+    $ cabal run riff-identity # the identity over RIFF files, useful for testing
+
+Feel free to use any of these executables to have a play with the RIFF file format, or better yet,
+write some code using this library and let me know about it.
 
 ## Example Data
 
