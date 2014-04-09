@@ -79,7 +79,7 @@ writeRiffChunk context chunk@(RiffChunkChild _ _) = do
    putString . safeId . riffChunkId $ chunk
    let chunkSize = calculateChunkLength chunk
    putSize context chunkSize
-   sequence_ $ fmap putWord8 (riffData chunk)
+   putLazyByteString (riffData chunk)
    maybeFillBlank chunkSize
 writeRiffChunk context chunk@(RiffChunkParent _ _) = do
    putString "LIST" -- Do not need to pass through safeId, chosen to be correct
