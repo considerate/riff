@@ -31,10 +31,16 @@ handleFlags flags files = do
 
 convert :: Bool -> FilePath -> IO ()
 convert toRifx filePath = do
+   putStr $ "> Reading " ++ filePath ++ "..."
    withRiffFile filePath $ \result -> case result of
       Left (pos, error) -> putStrLn $ error ++ " (Offset: " ++ show pos ++ ")"
-      Right riffFile -> assembleRiffFile (filename ++ ".converted" ++ ext) (riffFile { riffFileType = riffFT })
+      Right riffFile -> do
+         putStr "converting..."
+         assembleRiffFile newFilename $ convertRep riffFile
+         putStrLn "[DONE]"
    where
+      newFilename = filename ++ ".converted" ++ ext
       (filename, ext) = splitExtension filePath
 
+      convertRep riffFile = riffFile { riffFileType = riffFT } 
       riffFT = if toRifx then RIFX else RIFF
