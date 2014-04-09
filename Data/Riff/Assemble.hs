@@ -59,7 +59,7 @@ assembleRiffFileStream = runPut . writeRiffFile
 writeRiffFile :: RiffFile -> Put
 writeRiffFile riffFile = do
    printHeader . riffFileType $ riffFile -- Do not need safeId, chosen to be correrct
-   putWord32le . calculateFileLength $ riffFile
+   putSize context . calculateFileLength $ riffFile
    putString . safeId . riffFileFormatType $ riffFile
    sequence_ $ fmap (writeRiffChunk context) (riffFileChildren riffFile)
    where
