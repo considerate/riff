@@ -5,7 +5,7 @@ import Data.Word (Word32)
 import Data.Binary.Get (ByteOffset)
 import qualified Data.ByteString.Lazy as BL
 
--- | The data in a riff file is just a collection of bytes.
+-- | The data in a riff file is just a stream of bytes.
 type RiffData = BL.ByteString
 
 -- | A Riff file is made up exclusively of Riff Chunks and each chunk, as the second piece
