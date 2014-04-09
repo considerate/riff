@@ -7,6 +7,7 @@ import System.Environment (getArgs)
 import Data.List (intersperse)
 import Control.Monad (when)
 import Data.Char (chr)
+import qualified Data.ByteString.Lazy.Char8 as BLC
 
 main = do
    args <- getArgs
@@ -51,7 +52,7 @@ printRiffChunk context chunk@(RiffChunkChild id value) = do
    putStr $ " [" ++ showLength chunk ++ "]"
    when (printValue context) $ do
       putStr ": "
-      inQuotes (putStr . fmap (chr . fromIntegral) $ takeWhile (/= 0) value)
+      inQuotes (putStr . BLC.unpack . BLC.takeWhile (/= chr 0) $ value)
    putNewline
 printRiffChunk context chunk@(RiffChunkParent typeName children) = do
    printWithIndent context "LIST"

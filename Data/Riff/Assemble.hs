@@ -11,14 +11,15 @@ to a ByteString or Disk. For example, this is how you might construct a RIFF fil
 out:
 
 > import Data.Riff
->
-> riffFile = RiffFile RIFF "EXPL" children
+> import qualified Data.ByteString.Lazy as BL
+> 
+> riffFile = RiffFile RIFX "EXPL" children
 > 
 > children = 
->    [ RiffChunkChild "fst " [1..11]
->    , RiffChunkChild "snd " [11..100]
+>    [ RiffChunkChild "fst " $ BL.pack [1..11]
+>    , RiffChunkChild "snd " $ BL.pack [11..100]
 >    ]
->
+> 
 > main = assembleRiffFile "example.riff" riffFile
 
 As you can see it is a very simple API that lets you write out data into Riff Files. Have a play 
@@ -79,7 +80,7 @@ writeRiffChunk context chunk@(RiffChunkChild _ _) = do
    putString . safeId . riffChunkId $ chunk
    let chunkSize = calculateChunkLength chunk
    putSize context chunkSize
-   sequence_ $ fmap putWord8 (riffData chunk)
+   putLazyByteString . riffData $ chunk
    maybeFillBlank chunkSize
 writeRiffChunk context chunk@(RiffChunkParent _ _) = do
    putString "LIST" -- Do not need to pass through safeId, chosen to be correct

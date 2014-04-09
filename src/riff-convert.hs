@@ -22,7 +22,7 @@ main = do
    handleFlags flags extras
    
 handleFlags :: [Flag] -> [String] -> IO ()
-handleFlags flags files = do
+handleFlags flags files = 
    if Help `elem` flags
       then putStrLn $ usageInfo "riff-convert" options
       else sequence_ $ fmap (convert toRifx) files

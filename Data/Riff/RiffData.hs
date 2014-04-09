@@ -1,11 +1,12 @@
 -- | This module is responsible for all of the datatypes that are required around the codebase.
 module Data.Riff.RiffData where
 
-import Data.Word (Word8, Word32)
+import Data.Word (Word32)
 import Data.Binary.Get (ByteOffset)
+import qualified Data.ByteString.Lazy as BL
 
--- | The data in a riff file is just a collection of bytes.
-type RiffData = Word8
+-- | The data in a riff file is just a stream of bytes.
+type RiffData = BL.ByteString
 
 -- | A Riff file is made up exclusively of Riff Chunks and each chunk, as the second piece
 -- of data in the chunk, contains it's size. The size never includes the first 8 bytes of
@@ -21,7 +22,11 @@ type RiffData = Word8
 type RiffChunkSize = Word32
 
 -- | A RiffId is just a four character string (FourCC). It is usually (but by no means
--- always) chosen to be something that is human readable when converted to ASCII. 
+-- always) chosen to be something that is human readable when converted to ASCII. Please note
+-- that attempting to assemble a riff file with a RIFF ID that is not exactly four characters 
+-- long will result in the RiffId being modified in the output stream to be four characters long.
+-- If the ID is too short then it will be padded with space (' ') characters and if it is too long
+-- then it will be truncated at four characters.
 type RiffId = String
 
 -- | Represents an error in the parsing of a Riff File. It contains the location in the
@@ -52,7 +57,7 @@ data RiffFileType
 data RiffChunk 
    = RiffChunkChild
       { riffChunkId :: RiffId
-      , riffData :: [RiffData]
+      , riffData :: RiffData
       }
    | RiffChunkParent
       { riffFormTypeInfo :: RiffId

@@ -107,7 +107,7 @@ getRiffChunk context = do
             }, size)
       else do
          -- TODO do we need to consider byte boundaries here?
-         riffData <- lift $ getNWords (fromIntegral size)
+         riffData <- lift $ getLazyByteString (fromIntegral size)
          lift $ skipToWordBoundary size
          return (RiffChunkChild
             { riffChunkId = id

@@ -17,6 +17,7 @@ module Data.Riff.Operations
 
 import Data.Riff.RiffData
 import Data.Riff.InternalUtil
+import qualified Data.ByteString.Lazy as BL
 
 -- | This function calculates the size of the RIFF file if it was written out to disk.
 trueFileSize 
@@ -38,7 +39,7 @@ calculateFileLength (RiffFile _ _ children) =
 calculateChunkLength 
    :: RiffChunk      -- ^ The RIFF chunk whose size should be calculated.
    -> RiffChunkSize  -- ^ The size of the data portion of that chunk no disk.
-calculateChunkLength (RiffChunkChild _ chunkData) = fromIntegral $ length chunkData
+calculateChunkLength (RiffChunkChild _ chunkData) = fromIntegral $ BL.length chunkData
 calculateChunkLength (RiffChunkParent _ children) = 
    idLength + childHeaderLength children + childrenLength children
 
