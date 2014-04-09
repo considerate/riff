@@ -45,6 +45,7 @@ module Data.Riff (
    -- * Reading (parsing) RIFF Files
    withRiffFile,
    parseRiffData,
+   -- * Writing (assembling) RIFF Files
    assembleRiffFile,
    assembleRiffFileStream
    ) where
