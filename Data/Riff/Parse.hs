@@ -15,15 +15,14 @@ And that will print the RIFF file, in gory details, to the screen.
 -}
 module Data.Riff.Parse
    ( withRiffFile
-   , parseRiffData
+   , parseRiffFileStream
+   , getRiffFile
    ) where
 
 import Data.Riff.RiffData
 import Data.Riff.InternalUtil
 
 import Control.Monad (when, replicateM)
-import Control.Monad.Trans.Either (EitherT(..), left, right)
-import Control.Monad.Trans.Class
 import Data.Binary.Get
 import qualified Data.ByteString.Lazy as BL
 import Data.Char (chr)
@@ -40,34 +39,34 @@ withRiffFile :: FilePath                              -- ^ The file that will be
                                                       -- parsed file
              -> IO ()                                 -- ^ The resultant IO action.
 withRiffFile filePath action = withBinaryFile filePath ReadMode $ \h -> do
-   riffData <- fmap parseRiffData (BL.hGetContents h)
+   riffData <- fmap parseRiffFileStream (BL.hGetContents h)
    action riffData
 
 -- | You can parse a raw ByteString and try and convert it into a RiffFile. This will give
 -- a best attempt at parsing the data and, if success is not possible, will give you a
 -- ParseError.
-parseRiffData :: BL.ByteString               -- A lazy bytestring for input.
-              -> Either ParseError RiffFile  -- The result of our attempted parse.
-parseRiffData input =
-   case runGetOrFail (runEitherT getRiffStart) input of
+parseRiffFileStream :: BL.ByteString               -- A lazy bytestring for input.
+              -> Either ParseError RiffFile        -- The result of our attempted parse.
+parseRiffFileStream input =
+   case runGetOrFail getRiffFile input of
       Left (_, offset, error) -> Left (offset, error)
-      Right (_, _, result) -> result
+      Right (_, _, result) -> Right result
 
 data ParseContext = ParseContext
    { getSize :: Get RiffChunkSize
    }
 
-getRiffStart :: EitherT ParseError Get RiffFile
-getRiffStart = do
-   id <- lift getIdentifier
+-- | A binary instance of RiffFile so that you can parse one wherever you find it.
+getRiffFile :: Get RiffFile
+getRiffFile = do
+   id <- getIdentifier
    (context, fileType) <- case id of
-      "RIFF" -> right (leContext, RIFF)
-      "RIFX" -> right (beContext, RIFX)
+      "RIFF" -> return (leContext, RIFF)
+      "RIFX" -> return (beContext, RIFX)
       _ -> do
-         read <- lift bytesRead 
-         left (read, "RIFF file not allowed to start with chunk id: '" ++ id ++ "'. Must start with either RIFF or RIFX")
-   size <- lift . getSize $ context
-   riffType <- lift getIdentifier
+         fail $ "RIFF file not allowed to start with chunk id: '" ++ id ++ "'. Must start with either RIFF or RIFX"
+   size <- getSize $ context
+   riffType <- getIdentifier
    contents <- parseChunkList context (size - 4)
    return RiffFile
       { riffFileType = fileType
@@ -78,7 +77,7 @@ getRiffStart = do
       leContext = ParseContext getWord32le
       beContext = ParseContext getWord32be
 
-parseChunkList :: ParseContext -> RiffChunkSize -> EitherT ParseError Get [RiffChunk]
+parseChunkList :: ParseContext -> RiffChunkSize -> Get [RiffChunk]
 parseChunkList _        0         = return []
 parseChunkList context  totalSize = do
    (nextChunk, dataSize) <- getRiffChunk context
@@ -90,33 +89,32 @@ parseChunkList context  totalSize = do
          following <- parseChunkList context (totalSize - chunkSize)
          return $ nextChunk : following
 
-getRiffChunk :: ParseContext -> EitherT ParseError Get (RiffChunk, RiffChunkSize)
+getRiffChunk :: ParseContext -> Get (RiffChunk, RiffChunkSize)
 getRiffChunk context = do
-   id <- lift getIdentifier
-   size <- lift . getSize $ context
+   id <- getIdentifier
+   size <- getSize $ context
    if id == "LIST"
       then do
          guardListSize id size
-         formType <- lift getIdentifier
+         formType <- getIdentifier
          -- Minus 4 because of the formType before that is part of the size
          children <- parseChunkList context (size - 4)
-         lift $ skipToWordBoundary size
+         skipToWordBoundary size
          return (RiffChunkParent
             { riffFormTypeInfo = formType
             , riffChunkChildren = children
             }, size)
       else do
          -- TODO do we need to consider byte boundaries here?
-         riffData <- lift $ getLazyByteString (fromIntegral size)
-         lift $ skipToWordBoundary size
+         riffData <- getLazyByteString (fromIntegral size)
+         skipToWordBoundary size
          return (RiffChunkChild
             { riffChunkId = id
             , riffData = riffData
             }, size)
    where
       guardListSize id size = when (size < 4) $ do
-         read <- lift bytesRead
-         left (read, message id size)
+         fail $ message id size
          where
             message id size = 
                "List Chunk Id '" ++ id 

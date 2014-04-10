@@ -44,12 +44,21 @@ module Data.Riff (
    ParseError,
    -- * Reading (parsing) RIFF Files
    withRiffFile,
-   parseRiffData,
+   parseRiffFileStream,
+   getRiffFile,
    -- * Writing (assembling) RIFF Files
    assembleRiffFile,
-   assembleRiffFileStream
+   assembleRiffFileStream,
+   putRiffFile
    ) where
 
 import Data.Riff.RiffData
 import Data.Riff.Parse
 import Data.Riff.Assemble
+
+import Data.Binary
+
+-- | A binary instance of a RiffFile.
+instance Binary RiffFile where
+   get = getRiffFile
+   put = putRiffFile
